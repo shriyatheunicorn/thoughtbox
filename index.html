@@ -148,11 +148,15 @@
       font-style: italic;
       color: var(--accent);
       display: inline-block;
-      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .hero-title em:hover {
-      transform: rotate(-3deg) scale(1.05);
+    .hero-title em span {
+      display: inline-block;
+      transition: opacity 0.4s ease;
+    }
+
+    .hero-title em span:hover {
+      opacity: 0;
     }
 
     .hero-sub {
@@ -493,7 +497,7 @@
     <!-- Hero -->
     <section class="hero">
       <h1 class="hero-title">
-        welcome2my<em>mind</em>
+        welcome2my<em><span>m</span><span>i</span><span>n</span><span>d</span></em>
       </h1>
       <p class="hero-sub">hi. 😁</p>
       <div class="scroll-indicator">
@@ -505,8 +509,7 @@
     <section id="about">
       <div class="section-label reveal">001 — About</div>
       <p class="about-text reveal">
-        i hope u have lots of <span class="highlight">fun</span> and
-        <span class="highlight">maybe</span> u think im super awesome.
+        but r u <span class="highlight">really</span> thinking
       </p>
       <div class="about-detail reveal">
         or maybe this is a whole bunch a nonsense.
