@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>non-sense.xyz</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400&family=Syne:wght@400;700;800&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #f5f3f0;
+      --fg: #1a1a1a;
+      --accent: #888;
+      --muted: #d6d3ce;
+      --dim: #999;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+      scrollbar-color: var(--muted) var(--bg);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 300;
+      font-size: 14px;
+      overflow-x: hidden;
+      cursor: crosshair;
+    }
+
+    /* ───── Canvas Background ───── */
+    #bg-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      opacity: 0.6;
+    }
+
+    /* ───── Grain Overlay ───── */
+    .grain {
+      position: fixed;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      z-index: 1;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: 0.3;
+      animation: grainShift 0.5s steps(3) infinite;
+    }
+
+    @keyframes grainShift {
+      0% { transform: translate(0, 0); }
+      33% { transform: translate(-2px, 1px); }
+      66% { transform: translate(1px, -1px); }
+      100% { transform: translate(0, 0); }
+    }
+
+    /* ───── Layout ───── */
+    .container {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+    }
+
+    /* ───── Nav ───── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 40px;
+      mix-blend-mode: difference;
+    }
+
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: -0.5px;
+      color: var(--fg);
+      text-decoration: none;
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--dim);
+      text-decoration: none;
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      transition: color 0.3s;
+      position: relative;
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 1px;
+      background: var(--accent);
+      transition: width 0.3s;
+    }
+
+    .nav-links a:hover { color: var(--fg); }
+    .nav-links a:hover::after { width: 100%; }
+
+    /* ───── Hero ───── */
+    .hero {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      position: relative;
+    }
+
+    .hero-title {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(64px, 12vw, 180px);
+      line-height: 0.9;
+      letter-spacing: -4px;
+      color: var(--fg);
+      opacity: 0;
+      animation: fadeUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+    }
+
+    .hero-title em {
+      font-style: italic;
+      color: var(--accent);
+      display: inline-block;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .hero-title em:hover {
+      transform: rotate(-3deg) scale(1.05);
+    }
+
+    .hero-sub {
+      margin-top: 32px;
+      font-size: 13px;
+      color: var(--dim);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      opacity: 0;
+      animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.8s forwards;
+    }
+
+    .scroll-indicator {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      opacity: 0;
+      animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) 1.3s forwards;
+    }
+
+    .scroll-line {
+      width: 1px;
+      height: 48px;
+      background: linear-gradient(to bottom, var(--dim), transparent);
+      animation: scrollPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes scrollPulse {
+      0%, 100% { opacity: 1; transform: scaleY(1); }
+      50% { opacity: 0.3; transform: scaleY(0.6); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ───── Section Styles ───── */
+    section {
+      padding: 120px 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 11px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 48px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .section-label::before {
+      content: '';
+      width: 40px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    /* ───── About ───── */
+    .about-text {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(28px, 4vw, 52px);
+      line-height: 1.3;
+      color: var(--fg);
+      max-width: 900px;
+    }
+
+    .about-text .highlight {
+      color: var(--accent);
+      font-style: italic;
+    }
+
+    .about-detail {
+      margin-top: 48px;
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--dim);
+      max-width: 600px;
+      columns: 2;
+      column-gap: 40px;
+    }
+
+    /* ───── Projects ───── */
+    .project-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 2px;
+    }
+
+    .project-card {
+      background: #eeebe7;
+      border: 1px solid var(--muted);
+      padding: 48px 36px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+    }
+
+    .project-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: linear-gradient(135deg, rgba(0,0,0,0.04), transparent);
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+
+    .project-card:hover::before { opacity: 0.05; }
+    .project-card:hover { border-color: var(--accent); transform: translateY(-4px); }
+
+    .project-num {
+      font-size: 11px;
+      color: var(--dim);
+      letter-spacing: 2px;
+      margin-bottom: 24px;
+    }
+
+    .project-name {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+
+    .project-desc {
+      font-size: 13px;
+      color: var(--dim);
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .project-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border: 1px solid var(--muted);
+      border-radius: 2px;
+      color: var(--dim);
+      transition: all 0.3s;
+    }
+
+    .project-card:hover .tag {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .project-arrow {
+      position: absolute;
+      top: 36px; right: 36px;
+      font-size: 20px;
+      color: var(--muted);
+      transition: all 0.4s;
+    }
+
+    .project-card:hover .project-arrow {
+      color: var(--accent);
+      transform: translate(4px, -4px);
+    }
+
+    /* ───── Marquee ───── */
+    .marquee-section {
+      padding: 80px 0;
+      overflow: hidden;
+      border-top: 1px solid var(--muted);
+      border-bottom: 1px solid var(--muted);
+    }
+
+    .marquee-track {
+      display: flex;
+      white-space: nowrap;
+      animation: marquee 20s linear infinite;
+    }
+
+    .marquee-track span {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(48px, 8vw, 120px);
+      font-style: italic;
+      color: var(--muted);
+      padding: 0 40px;
+      user-select: none;
+    }
+
+    .marquee-track span.filled {
+      color: var(--fg);
+      -webkit-text-stroke: 0;
+    }
+
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    /* ───── Contact ───── */
+    .contact-section {
+      text-align: center;
+      padding: 160px 40px;
+    }
+
+    .contact-heading {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(40px, 7vw, 100px);
+      line-height: 1;
+      margin-bottom: 40px;
+    }
+
+    .contact-heading em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .contact-links {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+
+    .contact-link {
+      color: var(--dim);
+      text-decoration: none;
+      font-size: 13px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      position: relative;
+      padding-bottom: 4px;
+      transition: color 0.3s;
+    }
+
+    .contact-link::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 100%; height: 1px;
+      background: var(--accent);
+      transform: scaleX(0);
+      transform-origin: right;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .contact-link:hover { color: var(--fg); }
+    .contact-link:hover::after {
+      transform: scaleX(1);
+      transform-origin: left;
+    }
+
+    /* ───── Footer ───── */
+    footer {
+      padding: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--muted);
+      font-size: 11px;
+      color: var(--dim);
+      letter-spacing: 1px;
+    }
+
+    .footer-time {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ───── Custom Cursor Follower ───── */
+    .cursor-glow {
+      position: fixed;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 0, 0, 0.03), transparent 70%);
+      pointer-events: none;
+      z-index: 1;
+      transform: translate(-50%, -50%);
+      transition: transform 0.1s ease-out;
+      will-change: left, top;
+    }
+
+    /* ───── Reveal Animation ───── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ───── Mobile ───── */
+    @media (max-width: 768px) {
+      nav { padding: 20px 24px; }
+      .nav-links { gap: 20px; }
+      .nav-links a { font-size: 10px; }
+      section { padding: 80px 24px; }
+      .about-detail { columns: 1; }
+      .project-grid { grid-template-columns: 1fr; }
+      .contact-links { gap: 24px; }
+      footer { padding: 24px; flex-direction: column; gap: 12px; }
+      .cursor-glow { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="bg-canvas"></canvas>
+  <div class="grain"></div>
+  <div class="cursor-glow" id="cursorGlow"></div>
+
+  <div class="container">
+
+    <!-- Nav -->
+    <nav>
+      <a href="#" class="logo">👽👽👽👽👽👽👽</a>
+      <ul class="nav-links">
+        <li><a href="#about">About</a></li>
+        <li><a href="#work">Work</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+      <h1 class="hero-title">
+        welcome2my<em>mind</em>
+      </h1>
+      <p class="hero-sub">hi. 😁</p>
+      <div class="scroll-indicator">
+        <div class="scroll-line"></div>
+      </div>
+    </section>
+
+    <!-- About -->
+    <section id="about">
+      <div class="section-label reveal">001 — About</div>
+      <p class="about-text reveal">
+        I build things at the intersection of <span class="highlight">chaos</span> and
+        <span class="highlight">clarity</span> — experiments in code, design,
+        and whatever else refuses to make sense.
+      </p>
+      <div class="about-detail reveal">
+        This is a space for projects that don't fit neatly into boxes.
+        Software, art, research, and the occasional beautiful mistake.
+        Everything here started as a question nobody asked.
+        If it makes too much sense, it probably doesn't belong here.
+      </div>
+    </section>
+
+    <!-- Marquee -->
+    <div class="marquee-section">
+      <div class="marquee-track">
+        <span>non-sense</span>
+        <span class="filled">✦</span>
+        <span>experiments</span>
+        <span class="filled">✦</span>
+        <span>beautiful chaos</span>
+        <span class="filled">✦</span>
+        <span>non-sense</span>
+        <span class="filled">✦</span>
+        <span>experiments</span>
+        <span class="filled">✦</span>
+        <span>beautiful chaos</span>
+        <span class="filled">✦</span>
+      </div>
+    </div>
+
+    <!-- Projects -->
+    <section id="work">
+      <div class="section-label reveal">002 — Work</div>
+      <div class="project-grid">
+        <div class="project-card reveal">
+          <div class="project-num">01</div>
+          <div class="project-arrow">↗</div>
+          <h3 class="project-name">Project Alpha</h3>
+          <p class="project-desc">An experiment in generative systems that evolve beyond their initial parameters.</p>
+          <div class="project-tags">
+            <span class="tag">Creative Code</span>
+            <span class="tag">Generative</span>
+          </div>
+        </div>
+        <div class="project-card reveal">
+          <div class="project-num">02</div>
+          <div class="project-arrow">↗</div>
+          <h3 class="project-name">Void Protocol</h3>
+          <p class="project-desc">Exploring the space between input and output — where meaning dissolves and reforms.</p>
+          <div class="project-tags">
+            <span class="tag">Research</span>
+            <span class="tag">ML</span>
+          </div>
+        </div>
+        <div class="project-card reveal">
+          <div class="project-num">03</div>
+          <div class="project-arrow">↗</div>
+          <h3 class="project-name">Signal / Noise</h3>
+          <p class="project-desc">A visual essay on the information we choose to see and the noise we choose to ignore.</p>
+          <div class="project-tags">
+            <span class="tag">Design</span>
+            <span class="tag">Interactive</span>
+          </div>
+        </div>
+        <div class="project-card reveal">
+          <div class="project-num">04</div>
+          <div class="project-arrow">↗</div>
+          <h3 class="project-name">Entropy Garden</h3>
+          <p class="project-desc">Growing digital organisms that learn, adapt, and occasionally do something surprising.</p>
+          <div class="project-tags">
+            <span class="tag">Simulation</span>
+            <span class="tag">A-Life</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact" class="contact-section">
+      <h2 class="contact-heading reveal">
+        Let's make<br><em>something</em>
+      </h2>
+      <div class="contact-links reveal">
+        <a href="mailto:hello@non-sense.xyz" class="contact-link">Email</a>
+        <a href="https://twitter.com" target="_blank" class="contact-link">Twitter / X</a>
+        <a href="https://github.com" target="_blank" class="contact-link">GitHub</a>
+        <a href="https://linkedin.com" target="_blank" class="contact-link">LinkedIn</a>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <span>© 2026 non-sense.xyz</span>
+      <span class="footer-time" id="clock"></span>
+    </footer>
+
+  </div>
+
+  <script>
+    // ───── Particle Canvas ─────
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 1.5 + 0.5;
+        this.speedX = (Math.random() - 0.5) * 0.3;
+        this.speedY = (Math.random() - 0.5) * 0.3;
+        this.opacity = Math.random() * 0.5 + 0.1;
+      }
+      update() {
+        const dx = mouse.x - this.x;
+        const dy = mouse.y - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 200) {
+          this.x -= dx * 0.005;
+          this.y -= dy * 0.005;
+        }
+        this.x += this.speedX;
+        this.y += this.speedY;
+        if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+          this.reset();
+        }
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(26, 26, 26, ${this.opacity * 0.4})`;
+        ctx.fill();
+      }
+    }
+
+    for (let i = 0; i < 120; i++) particles.push(new Particle());
+
+    function drawLines() {
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 120) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(0, 0, 0, ${0.04 * (1 - dist / 120)})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => { p.update(); p.draw(); });
+      drawLines();
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    // ───── Cursor Glow ─────
+    const glow = document.getElementById('cursorGlow');
+    document.addEventListener('mousemove', e => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+      glow.style.left = e.clientX + 'px';
+      glow.style.top = e.clientY + 'px';
+    });
+
+    // ───── Scroll Reveal ─────
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('visible'), i * 100);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // ───── Clock ─────
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock').textContent =
+        now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+  </script>
+
+</body>
+</html>
